@@ -91,3 +91,168 @@ class Cliente(Entidad):
       f"{self.nombre} - {self.correo}"
         )
 
+# =============================================================================
+# ESTUDIANTE 2: SERVICIOS, HERENCIA Y POLIMORFISMO_YILARI GISETH MELO CASTAÑEDA 
+# =============================================================================
+
+# Clase abstracta Servicio
+class Servicio(ABC):
+    def __init__(self, codigo, nombre, precio, descuento, impuesto):
+
+        if not codigo or not nombre:
+            raise DatoInvalidoError(
+                "El codigo y nombre del servicio son obligatorios."
+            )
+
+        if precio <= 0:
+            raise DatoInvalidoError(
+                "El precio debe ser mayor que cero."
+            )
+
+        if descuento < 0 or descuento > 100:
+            raise DatoInvalidoError(
+                "El descuento debe estar entre 0 y 100."
+            )
+
+        if impuesto < 0 or impuesto > 100:
+            raise DatoInvalidoError(
+                "El impuesto debe estar entre 0 y 100."
+            )
+
+        self.codigo = codigo
+        self.nombre = nombre
+        self.precio = precio
+        self.descuento = descuento
+        self.impuesto = impuesto
+
+    @abstractmethod
+    def describir(self):
+        pass
+
+    @abstractmethod
+    def validar_parametros(self, duracion):
+        pass
+
+    @abstractmethod
+    def calcular_costo(self, duracion, *opciones):
+        pass
+
+    # Calculo general de los servicios
+    def calcular_total(self, duracion, descuento, impuesto):
+
+        subtotal = self.precio * duracion
+
+        valor_descuento = subtotal * descuento / 100
+        subtotal_con_descuento = subtotal - valor_descuento
+
+        valor_impuesto = subtotal_con_descuento * impuesto / 100
+
+        return subtotal_con_descuento + valor_impuesto
+# Servicio 1: Reserva de salas
+class ReservaSala(Servicio):
+
+    def describir(self):
+        return "Reserva de salas"
+
+    def validar_parametros(self, duracion):
+        if duracion <= 0 or duracion > 12:
+            raise DatoInvalidoError(
+                "Las salas se pueden reservar de 1 a 12 horas."
+            )
+
+    # Sin opciones: utiliza descuento e impuesto registrados.
+    # Una opcion: permite cambiar el descuento.
+    # Dos opciones: permite cambiar descuento e impuesto.
+    def calcular_costo(self, duracion, *opciones):
+
+        self.validar_parametros(duracion)
+
+        if len(opciones) == 0:
+            descuento = self.descuento
+            impuesto = self.impuesto
+
+        elif len(opciones) == 1:
+            descuento = opciones[0]
+            impuesto = self.impuesto
+
+        elif len(opciones) == 2:
+            descuento, impuesto = opciones
+
+        else:
+            raise DatoInvalidoError(
+                "Cantidad de opciones incorrecta."
+            )
+
+        if not 0 <= descuento <= 100 or not 0 <= impuesto <= 100:
+            raise DatoInvalidoError(
+                "Descuento o impuesto fuera del rango permitido."
+            )
+
+        return self.calcular_total(duracion, descuento, impuesto)
+
+
+# Servicio 2: Alquiler de equipos
+class AlquilerEquipo(Servicio):
+
+    def describir(self):
+        return "Alquiler de equipos"
+
+    def validar_parametros(self, duracion):
+        if duracion <= 0 or duracion > 24:
+            raise DatoInvalidoError(
+                "Los equipos se pueden alquilar de 1 a 24 horas."
+            )
+
+    def calcular_costo(self, duracion, *opciones):
+
+        self.validar_parametros(duracion)
+
+        if len(opciones) == 0:
+            descuento = self.descuento
+            impuesto = self.impuesto
+        elif len(opciones) == 1:
+            descuento = opciones[0]
+            impuesto = self.impuesto
+        elif len(opciones) == 2:
+            descuento, impuesto = opciones
+        else:
+            raise DatoInvalidoError("Opciones incorrectas.")
+
+        if not 0 <= descuento <= 100 or not 0 <= impuesto <= 100:
+            raise DatoInvalidoError("Valores incorrectos.")
+
+        return self.calcular_total(duracion, descuento, impuesto)
+# Servicio 3: Asesorias
+class Asesoria(Servicio):
+
+    def describir(self):
+        return "Asesorias especializadas"
+
+    def validar_parametros(self, duracion):
+        if duracion <= 0 or duracion > 8:
+            raise DatoInvalidoError(
+                "Las asesorias se pueden contratar de 1 a 8 horas."
+            )
+
+    def calcular_costo(self, duracion, *opciones):
+
+        self.validar_parametros(duracion)
+
+        if len(opciones) == 0:
+            descuento = self.descuento
+            impuesto = self.impuesto
+        elif len(opciones) == 1:
+            descuento = opciones[0]
+            impuesto = self.impuesto
+        elif len(opciones) == 2:
+            descuento, impuesto = opciones
+        else:
+            raise DatoInvalidoError("Opciones incorrectas.")
+
+        if not 0 <= descuento <= 100 or not 0 <= impuesto <= 100:
+            raise DatoInvalidoError("Valores incorrectos.")
+
+        return self.calcular_total(duracion, descuento, impuesto)
+
+
+
