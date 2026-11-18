@@ -255,4 +255,278 @@ class Asesoria(Servicio):
         return self.calcular_total(duracion, descuento, impuesto)
 
 
+# ==========================================================
+# ESTUDIANTE 3: RESERVAS, GESTION Y EXCEPCIONES_sebstian ibarra
+# ==========================================================
+
+#clase de reserva: perimete administar y crear reservas
+class Reserva:
+    #construccion: inicializacion de los datos de la reserva 
+    def __init__(self, codigo, cliente, servicio, duracion):
+
+        if not isinstance(cliente, Cliente):
+            raise ReservaError("El cliente no es valido.")
+
+        if not isinstance(servicio, Servicio):
+            raise ReservaError("El servicio no es valido.")
+
+        servicio.validar_parametros(duracion)
+
+        self.codigo = codigo
+        self.cliente = cliente
+        self.servicio = servicio
+        self.duracion = duracion
+        self.estado = "Pendiente"
+
+        self.costo = servicio.calcular_costo(duracion)
+
+#confirmar:cambia el estado de la reserva a confirmar
+    def confirmar(self):
+
+        if self.estado != "Pendiente":
+            raise ReservaError(
+                "Solo se pueden confirmar reservas pendientes."
+            )
+
+        self.estado = "Confirmada"
+        logging.info("Reserva %s confirmada.", self.codigo)
+
+# cancelar:permite cancelar una reserva 
+    def cancelar(self):
+
+        if self.estado in ("Cancelada", "Procesada"):
+            raise ReservaError(
+                "No se puede cancelar esta reserva."
+            )
+
+        self.estado = "Cancelada"
+        logging.info("Reserva %s cancelada.", self.codigo)
+
+#procesar:finaliza la reserva y finalixza su costo
+    def procesar(self):
+
+        if self.estado != "Confirmada":
+            raise ReservaError(
+                "Primero debe confirmar la reserva."
+            )
+
+        self.estado = "Procesada"
+        logging.info("Reserva %s procesada.", self.codigo)
+
+        return self.costo
+
+
+# Clase Gestor: administra clientes, servicios y reservas.
+class Gestor:
+    def __init__(self):
+        self.clientes = []
+        self.servicios = []
+        self.reservas = []
+        self.contador = 1
+
+    # Registrar cliente: valida y guarda los datos del cliente.
+    def registrar_cliente(self, identificacion, nombre, correo):
+
+        try:
+            if any(
+                c.identificacion == identificacion
+                for c in self.clientes
+            ):
+                raise DatoInvalidoError(
+                    "El cliente ya se encuentra registrado."
+                )
+
+            cliente = Cliente(identificacion, nombre, correo)
+
+        except DatoInvalidoError as error:
+            logging.error("Error al registrar cliente: %s", error)
+            raise
+
+        else:
+            self.clientes.append(cliente)
+            logging.info("Cliente registrado: %s", identificacion)
+            return cliente
+
+    # Registrar servicio: crea y guarda los diferentes servicios.
+    def registrar_servicio(self, tipo, precio, descuento, impuesto):
+
+        try:
+            codigo = "S" + str(len(self.servicios) + 1)
+
+            if tipo == "Sala":
+                servicio = ReservaSala(
+                    codigo, "Reserva de sala",
+                    precio, descuento, impuesto
+                )
+
+            elif tipo == "Equipo":
+                servicio = AlquilerEquipo(
+                    codigo, "Alquiler de equipo",
+                    precio, descuento, impuesto
+                )
+
+            elif tipo == "Asesoria":
+                servicio = Asesoria(
+                    codigo, "Asesoria especializada",
+                    precio, descuento, impuesto
+                )
+
+            else:
+                raise DatoInvalidoError(
+                    "Seleccione un tipo de servicio valido."
+                )
+
+            self.servicios.append(servicio)
+
+        except DatoInvalidoError as error:
+            logging.error("Error al registrar servicio: %s", error)
+            raise
+
+        else:
+            logging.info("Servicio registrado: %s", servicio.nombre)
+            return servicio
+
+    # Buscar servicio: localiza un servicio por su código.
+    def buscar_servicio(self, codigo):
+
+        for servicio in self.servicios:
+            if servicio.codigo == codigo:
+                return servicio
+
+        logging.error("Servicio no disponible: %s", codigo)
+
+        raise ServicioNoDisponibleError(
+            "El servicio seleccionado no existe."
+        )
+
+    # Crear reserva: registra una nueva reserva.
+    def crear_reserva(self, identificacion, codigo, duracion):
+
+        try:
+            cliente = next(
+                (
+                    c for c in self.clientes
+                    if c.identificacion == identificacion
+                ),
+                None
+            )
+
+            if cliente is None:
+                raise ReservaError("No se encontro el cliente.")
+
+            servicio = self.buscar_servicio(codigo)
+
+            reserva = Reserva(
+                self.contador, cliente, servicio, duracion
+            )
+
+            self.reservas.append(reserva)
+            self.contador += 1
+
+        except (
+            ReservaError,
+            ServicioNoDisponibleError,
+            DatoInvalidoError
+        ) as error:
+            logging.error("Error al crear reserva: %s", error)
+            raise
+
+        else:
+            logging.info("Reserva creada correctamente.")
+            return reserva
+
+        finally:
+            logging.info("Finalizo el intento de crear reserva.")
+
+    # Calcular costos con diferentes opciones
+    def calcular_costo(self, servicio, duracion, *opciones):
+
+        try:
+            return servicio.calcular_costo(duracion, *opciones)
+
+        except DatoInvalidoError as error:
+            raise ErrorSistema(
+                "No fue posible realizar el calculo."
+            ) from error
+
+    # Simulacion de operaciones solicitadas en la guia
+    def simular_operaciones(self):
+
+        # 1. Registrar cliente correctamente
+        self.registrar_cliente(
+            "1001", "Laura Perez", "laura@gmail.com"
+        )
+
+        # 2. Registrar cliente con correo incorrecto
+        try:
+            self.registrar_cliente(
+                "1002", "Carlos Ruiz", "correoincorrecto"
+            )
+        except DatoInvalidoError:
+            pass
+
+        # 3. Registrar otro cliente
+        self.registrar_cliente(
+            "1003", "Ana Gomez", "ana@gmail.com"
+        )
+
+        # 4. Crear servicio correctamente
+        self.registrar_servicio("Sala", 25000, 10, 19)
+
+        # 5. Intentar crear servicio con precio incorrecto
+        try:
+            self.registrar_servicio("Equipo", -100, 0, 19)
+        except DatoInvalidoError:
+            pass
+
+        # 6. Crear segundo servicio
+        self.registrar_servicio("Equipo", 15000, 5, 19)
+
+        # 7. Crear tercer servicio
+        self.registrar_servicio("Asesoria", 30000, 0, 19)
+
+        # 8. Buscar un servicio existente
+        self.buscar_servicio("S1")
+
+        # 9. Buscar un servicio inexistente
+        try:
+            self.buscar_servicio("S9")
+        except ServicioNoDisponibleError:
+            pass
+
+        # 10. Crear reserva correctamente
+        reserva = self.crear_reserva("1001", "S1", 2)
+
+        # 11. Crear reserva con duracion incorrecta
+        try:
+            self.crear_reserva("1001", "S1", 20)
+        except DatoInvalidoError:
+            pass
+
+        # 12. Confirmar reserva
+        reserva.confirmar()
+
+        # 13. Procesar reserva
+        reserva.procesar()
+
+        # 14. Crear y cancelar otra reserva
+        reserva2 = self.crear_reserva("1003", "S3", 1)
+        reserva2.cancelar()
+
+        # 15. Intentar procesar una reserva cancelada
+        try:
+            reserva2.procesar()
+        except ReservaError:
+            pass
+
+        # 16. Calcular con opciones incorrectas
+        try:
+            self.calcular_costo(
+                self.servicios[0], 2, 10, -5
+            )
+        except ErrorSistema as error:
+            logging.error("Error encadenado: %s", error)
+
+        logging.info("Finalizaron las pruebas de simulacion.")
+
 
