@@ -529,4 +529,522 @@ class Gestor:
 
         logging.info("Finalizaron las pruebas de simulacion.")
 
+# ==========================================================
+# ESTUDIANTE 4: INTERFAZ GRAFICA_Leidy Ospina
+# ==========================================================
+
+class Aplicacion:
+
+    def __init__(self, ventana):
+
+        self.gestor = Gestor()
+
+        # Las pruebas se realizan en otro gestor para no
+        # mezclar los datos de ejemplo con los del usuario.
+        pruebas = Gestor()
+
+        try:
+            pruebas.simular_operaciones()
+        except Exception as error:
+            logging.exception("Error en las pruebas: %s", error)
+
+        ventana.title("Software FJ")
+        ventana.geometry("950x650")
+        ventana.minsize(850, 600)
+
+        # Titulo principal
+        ttk.Label(
+            ventana,
+            text="SOFTWARE FJ",
+            font=("Arial", 17, "bold")
+        ).pack(pady=(10, 0))
+
+        ttk.Label(
+            ventana,
+            text="Gestion de clientes, servicios y reservas"
+        ).pack(pady=(0, 10))
+
+        # ---------------- CLIENTES ----------------
+
+        marco = ttk.LabelFrame(
+            ventana, text="Clientes", padding=8
+        )
+        marco.pack(fill="x", padx=12, pady=4)
+
+        self.documento = tk.StringVar()
+        self.nombre = tk.StringVar()
+        self.correo = tk.StringVar()
+
+        ttk.Label(marco, text="Documento").grid(
+            row=0, column=0, padx=4
+        )
+        ttk.Entry(
+            marco, textvariable=self.documento, width=17
+        ).grid(row=0, column=1, padx=4)
+
+        ttk.Label(marco, text="Nombre").grid(
+            row=0, column=2, padx=4
+        )
+        ttk.Entry(
+            marco, textvariable=self.nombre, width=20
+        ).grid(row=0, column=3, padx=4)
+
+        ttk.Label(marco, text="Correo").grid(
+            row=0, column=4, padx=4
+        )
+        ttk.Entry(
+            marco, textvariable=self.correo, width=23
+        ).grid(row=0, column=5, padx=4)
+
+        ttk.Button(
+            marco,
+            text="Registrar",
+            command=self.registrar_cliente
+        ).grid(row=0, column=6, padx=5)
+
+        # ---------------- SERVICIOS ----------------
+
+        marco = ttk.LabelFrame(
+            ventana, text="Servicios y precios", padding=8
+        )
+        marco.pack(fill="x", padx=12, pady=4)
+
+        self.tipo = tk.StringVar(value="Sala")
+        self.precio = tk.StringVar()
+        self.descuento = tk.StringVar(value="0")
+        self.impuesto = tk.StringVar(value="0")
+
+        ttk.Label(marco, text="Tipo").grid(
+            row=0, column=0, padx=4
+        )
+
+        ttk.Combobox(
+            marco,
+            textvariable=self.tipo,
+            values=["Sala", "Equipo", "Asesoria"],
+            state="readonly",
+            width=13
+        ).grid(row=0, column=1, padx=4)
+
+        ttk.Label(marco, text="Precio/hora").grid(
+            row=0, column=2, padx=4
+        )
+        ttk.Entry(
+            marco, textvariable=self.precio, width=12
+        ).grid(row=0, column=3, padx=4)
+
+        ttk.Label(marco, text="Descuento %").grid(
+            row=0, column=4, padx=4
+        )
+        ttk.Entry(
+            marco, textvariable=self.descuento, width=8
+        ).grid(row=0, column=5, padx=4)
+
+        ttk.Label(marco, text="Impuesto %").grid(
+            row=0, column=6, padx=4
+        )
+        ttk.Entry(
+            marco, textvariable=self.impuesto, width=8
+        ).grid(row=0, column=7, padx=4)
+
+        ttk.Button(
+            marco,
+            text="Agregar",
+            command=self.registrar_servicio
+        ).grid(row=0, column=8, padx=5)
+
+        # Lista de servicios registrados
+        self.lista_servicios = tk.Listbox(
+            marco, height=3
+        )
+        self.lista_servicios.grid(
+            row=1, column=0, columnspan=9,
+            sticky="ew", padx=4, pady=7
+        )
+
+        # ---------------- RESERVAS ----------------
+
+        marco = ttk.LabelFrame(
+            ventana, text="Nueva reserva", padding=8
+        )
+        marco.pack(fill="x", padx=12, pady=4)
+
+        self.cliente = tk.StringVar()
+        self.servicio = tk.StringVar()
+        self.horas = tk.StringVar(value="1")
+
+        ttk.Label(marco, text="Cliente").grid(
+            row=0, column=0, padx=4
+        )
+
+        self.combo_clientes = ttk.Combobox(
+            marco,
+            textvariable=self.cliente,
+            state="readonly",
+            width=24
+        )
+        self.combo_clientes.grid(row=0, column=1, padx=4)
+
+        ttk.Label(marco, text="Servicio").grid(
+            row=0, column=2, padx=4
+        )
+
+        self.combo_servicios = ttk.Combobox(
+            marco,
+            textvariable=self.servicio,
+            state="readonly",
+            width=25
+        )
+        self.combo_servicios.grid(row=0, column=3, padx=4)
+
+        ttk.Label(marco, text="Horas").grid(
+            row=0, column=4, padx=4
+        )
+
+        ttk.Entry(
+            marco, textvariable=self.horas, width=8
+        ).grid(row=0, column=5, padx=4)
+
+        ttk.Button(
+            marco,
+            text="Crear reserva",
+            command=self.crear_reserva
+        ).grid(row=0, column=6, padx=5)
+
+        # ---------------- LISTADO ----------------
+
+        marco = ttk.LabelFrame(
+            ventana, text="Reservas registradas", padding=8
+        )
+        marco.pack(
+            fill="both", expand=True,
+            padx=12, pady=5
+        )
+
+        # Encabezados
+        encabezados = ttk.Frame(marco)
+        encabezados.pack(fill="x", pady=4)
+
+        ttk.Label(
+            encabezados, text="Codigo", width=8
+        ).pack(side="left")
+
+        ttk.Label(
+            encabezados, text="Cliente", width=18
+        ).pack(side="left")
+
+        ttk.Label(
+            encabezados, text="Servicio", width=18
+        ).pack(side="left")
+
+        ttk.Label(
+            encabezados, text="Horas", width=7
+        ).pack(side="left")
+
+        ttk.Label(
+            encabezados, text="Costo", width=14
+        ).pack(side="left")
+
+        ttk.Label(
+            encabezados, text="Estado", width=13
+        ).pack(side="left")
+
+        ttk.Label(
+            encabezados, text="Acciones"
+        ).pack(side="left")
+
+        # Cada reserva tendrá sus propios botones
+        self.lista_reservas = ttk.Frame(marco)
+        self.lista_reservas.pack(fill="both", expand=True)
+
+        self.actualizar_todo()
+
+    # ---------------- FUNCIONES DE CLIENTES ----------------
+
+    def registrar_cliente(self):
+
+        try:
+            self.gestor.registrar_cliente(
+                self.documento.get().strip(),
+                self.nombre.get().strip(),
+                self.correo.get().strip()
+            )
+
+            self.documento.set("")
+            self.nombre.set("")
+            self.correo.set("")
+
+            self.actualizar_clientes()
+
+            messagebox.showinfo(
+                "Correcto", "Cliente registrado."
+            )
+
+        except ErrorSistema as error:
+            logging.error("Error en interfaz de clientes: %s", error)
+            messagebox.showerror("Error", str(error))
+
+        except Exception as error:
+            logging.exception("Error inesperado: %s", error)
+            messagebox.showerror(
+                "Error", "Ocurrio un problema inesperado."
+            )
+
+    # ---------------- FUNCIONES DE SERVICIOS ----------------
+
+    def registrar_servicio(self):
+
+        try:
+            precio = float(self.precio.get())
+            descuento = float(self.descuento.get())
+            impuesto = float(self.impuesto.get())
+
+            self.gestor.registrar_servicio(
+                self.tipo.get(),
+                precio,
+                descuento,
+                impuesto
+            )
+
+            self.precio.set("")
+            self.descuento.set("0")
+            self.impuesto.set("0")
+
+            self.actualizar_servicios()
+
+            messagebox.showinfo(
+                "Correcto", "Servicio registrado."
+            )
+
+        except ValueError as error:
+            logging.error("Valores numericos incorrectos: %s", error)
+            messagebox.showerror(
+                "Error", "Ingrese valores numericos validos."
+            )
+
+        except ErrorSistema as error:
+            messagebox.showerror("Error", str(error))
+
+        except Exception as error:
+            logging.exception("Error al registrar servicio: %s", error)
+            messagebox.showerror("Error", "No se pudo registrar.")
+
+    # ---------------- FUNCIONES DE RESERVAS ----------------
+
+    def crear_reserva(self):
+
+        try:
+            if not self.cliente.get() or not self.servicio.get():
+                raise ReservaError(
+                    "Seleccione un cliente y un servicio."
+                )
+
+            identificacion = self.cliente.get().split(" - ")[0]
+            codigo = self.servicio.get().split(" - ")[0]
+
+            duracion = int(self.horas.get())
+
+            reserva = self.gestor.crear_reserva(
+                identificacion, codigo, duracion
+            )
+
+            self.actualizar_reservas()
+
+            messagebox.showinfo(
+                "Reserva creada",
+                f"Reserva: {reserva.codigo}\n"
+                f"Costo total: ${reserva.costo:,.0f}"
+            )
+
+        except ValueError as error:
+            logging.error("Duracion incorrecta: %s", error)
+            messagebox.showerror(
+                "Error", "Ingrese una cantidad de horas valida."
+            )
+
+        except ErrorSistema as error:
+            messagebox.showerror("Error", str(error))
+
+        except Exception as error:
+            logging.exception("Error al crear reserva: %s", error)
+            messagebox.showerror("Error", "No se pudo crear la reserva.")
+
+    # Confirmar una reserva especifica
+    def confirmar_reserva(self, reserva):
+
+        try:
+            reserva.confirmar()
+            self.actualizar_reservas()
+
+        except ReservaError as error:
+            logging.error("Error al confirmar: %s", error)
+            messagebox.showerror("Aviso", str(error))
+
+    # Cancelar una reserva especifica
+    def cancelar_reserva(self, reserva):
+
+        try:
+            reserva.cancelar()
+            self.actualizar_reservas()
+
+        except ReservaError as error:
+            logging.error("Error al cancelar: %s", error)
+            messagebox.showerror("Aviso", str(error))
+
+    # Procesar una reserva especifica
+    def procesar_reserva(self, reserva):
+
+        try:
+            costo = reserva.procesar()
+
+            messagebox.showinfo(
+                "Procesamiento",
+                f"Reserva procesada.\nTotal: ${costo:,.0f}"
+            )
+
+        except ReservaError as error:
+            logging.error("Error al procesar: %s", error)
+            messagebox.showerror("Aviso", str(error))
+
+        finally:
+            self.actualizar_reservas()
+
+    # ---------------- ACTUALIZAR INFORMACION ----------------
+
+    def actualizar_clientes(self):
+
+        valores = [
+            f"{c.identificacion} - {c.nombre}"
+            for c in self.gestor.clientes
+        ]
+
+        self.combo_clientes["values"] = valores
+
+        if valores:
+            self.combo_clientes.current(0)
+        else:
+            self.cliente.set("")
+
+    def actualizar_servicios(self):
+
+        self.lista_servicios.delete(0, tk.END)
+
+        valores = []
+
+        for s in self.gestor.servicios:
+
+            texto = (
+                f"{s.codigo} | {s.nombre} | "
+                f"${s.precio:,.0f}/h | "
+                f"Desc. {s.descuento}% | "
+                f"Imp. {s.impuesto}%"
+            )
+
+            self.lista_servicios.insert(tk.END, texto)
+
+            valores.append(
+                f"{s.codigo} - {s.nombre}"
+            )
+
+        self.combo_servicios["values"] = valores
+
+        if valores:
+            self.combo_servicios.current(0)
+        else:
+            self.servicio.set("")
+
+    def actualizar_reservas(self):
+
+        # Eliminar las filas anteriores
+        for elemento in self.lista_reservas.winfo_children():
+            elemento.destroy()
+
+        # Crear una fila por cada reserva
+        for reserva in self.gestor.reservas:
+
+            fila = ttk.Frame(self.lista_reservas)
+            fila.pack(fill="x", pady=3)
+
+            ttk.Label(
+                fila,
+                text=str(reserva.codigo),
+                width=8
+            ).pack(side="left")
+
+            ttk.Label(
+                fila,
+                text=reserva.cliente.nombre,
+                width=18
+            ).pack(side="left")
+
+            ttk.Label(
+                fila,
+                text=reserva.servicio.nombre,
+                width=18
+            ).pack(side="left")
+
+            ttk.Label(
+                fila,
+                text=str(reserva.duracion),
+                width=7
+            ).pack(side="left")
+
+            ttk.Label(
+                fila,
+                text=f"${reserva.costo:,.0f}",
+                width=14
+            ).pack(side="left")
+
+            ttk.Label(
+                fila,
+                text=reserva.estado,
+                width=13
+            ).pack(side="left")
+
+            # Botones al lado de cada reserva
+            ttk.Button(
+                fila,
+                text="Confirmar",
+                command=lambda r=reserva: self.confirmar_reserva(r)
+            ).pack(side="left", padx=2)
+
+            ttk.Button(
+                fila,
+                text="Cancelar",
+                command=lambda r=reserva: self.cancelar_reserva(r)
+            ).pack(side="left", padx=2)
+
+            ttk.Button(
+                fila,
+                text="Procesar",
+                command=lambda r=reserva: self.procesar_reserva(r)
+            ).pack(side="left", padx=2)
+
+    def actualizar_todo(self):
+        self.actualizar_clientes()
+        self.actualizar_servicios()
+        self.actualizar_reservas()
+
+
+# ==========================================================
+# EJECUCION DEL PROGRAMA
+# ==========================================================
+
+if __name__ == "__main__":
+
+    ventana = tk.Tk()
+
+    try:
+        aplicacion = Aplicacion(ventana)
+        logging.info("Programa iniciado correctamente.")
+        ventana.mainloop()
+
+    except Exception as error:
+        logging.exception("Error general del programa: %s", error)
+        messagebox.showerror(
+            "Error", "No fue posible iniciar el programa."
+        )
+
+    finally:
+        logging.info("Finalizo la ejecucion del programa.")
 
